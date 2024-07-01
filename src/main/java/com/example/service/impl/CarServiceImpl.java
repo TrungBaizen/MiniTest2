@@ -49,72 +49,76 @@ public class CarServiceImpl implements CarService {
             }
             throw new ValidationException(errors.stream().collect(Collectors.joining("; ")));
         }
-        try {
-            Car carSave = carRepository.save(car);
-            entityManager.flush();
-            return carSave;
-        } catch (DataIntegrityViolationException ex) {
-            List<String> errors = ExceptionController.getMessageError(bindingResult);
-            if (carRepository.existsByName(car.getName())) {
-                errors.add("name: Tên xe đã tồn tại");
-            }
-            if (carRepository.existsByFrameCode(car.getFrameCode())) {
-                errors.add("frameCode: Mã khung xe đã tồn tại");
-            }
-            if (carRepository.existsByMachineCode(car.getMachineCode())) {
-                errors.add("machineCode: Mã máy xe đã tồn tại");
-            }
-            throw new ValidationException(errors.stream().collect(Collectors.joining("; ")));
-        }
-}
-
-@Override
-public Car delete(Long id) {
-    Optional<Car> carOptional = carRepository.findById(id);
-    carRepository.deleteById(id);
-    return carOptional.get();
-}
-
-@Override
-public Car update(Long id, Car car, BindingResult bindingResult) {
-    if (bindingResult.hasErrors()) {
         List<String> errors = ExceptionController.getMessageError(bindingResult);
-        if (car.getProducer().getId() == null) {
-            errors.add("producer: Không được để trống");
+        if (carRepository.existsCarByName(car.getName())) {
+            errors.add("name: Tên đã tồn tại");
         }
-        if (car.getType().getId() == null) {
-            errors.add("type: Không được để trống");
+        if (carRepository.existsCarByFrameCode(car.getFrameCode())) {
+            errors.add("frameCode: Mã khung đã tồn tại");
+        }
+        if (carRepository.existsCarByMachineCode(car.getMachineCode())) {
+            errors.add("machineCode: Mã máy tồn tại");
         }
         if (errors.size() > 0) {
             throw new ValidationException(errors.stream().collect(Collectors.joining("; ")));
         }
-    }
-    findById(id);
-    car.setId(id);
-    try {
-        Car updateCar = carRepository.save(car);
-        entityManager.flush();
-        return updateCar;
-    } catch (PersistenceException ex) {
-        throw new IllegalArgumentException("Không thể cập nhật xe đã tồn tại");
+
+        return carRepository.save(car);
     }
 
-}
+    @Override
+    public Car delete(Long id) {
+        Optional<Car> carOptional = carRepository.findById(id);
+        carRepository.deleteById(id);
+        return carOptional.get();
+    }
 
-@Override
-public List<Car> findAll() {
-    if (carRepository.findAll().isEmpty()) {
+    @Override
+    public Car update(Long id, Car car, BindingResult bindingResult) {
+        Optional<Car> carOptional = findById(id);
+        if (bindingResult.hasErrors()) {
+            List<String> errors = ExceptionController.getMessageError(bindingResult);
+            if (car.getProducer().getId() == null) {
+                errors.add("producer: Không được để trống");
+            }
+            if (car.getType().getId() == null) {
+                errors.add("type: Không được để trống");
+            }
+            if (errors.size() > 0) {
+                throw new ValidationException(errors.stream().collect(Collectors.joining("; ")));
+            }
+        }
+        List<String> errors = ExceptionController.getMessageError(bindingResult);
+        if (carRepository.existsCarByName(car.getName()) && !carOptional.get().getName().equals(car.getName())) {
+            errors.add("name: Tên đã tồn tại");
+        }
+        if (carRepository.existsCarByFrameCode(car.getFrameCode()) && !carOptional.get().getFrameCode().equals(car.getFrameCode())) {
+            errors.add("frameCode: Mã khung đã tồn tại");
+        }
+        if (carRepository.existsCarByMachineCode(car.getMachineCode()) && !carOptional.get().getMachineCode().equals(car.getMachineCode())) {
+            errors.add("machineCode: Mã máy tồn tại");
+        }
+        if (errors.size() > 0) {
+            throw new ValidationException(errors.stream().collect(Collectors.joining("; ")));
+        }
+        car.setId(id);
+        return carRepository.save(car);
+    }
+
+    @Override
+    public List<Car> findAll() {
+        if (carRepository.findAll().isEmpty()) {
+            throw new IllegalArgumentException();
+        }
+        return carRepository.findAll();
+    }
+
+    @Override
+    public Optional<Car> findById(Long id) {
+        Optional<Car> carOptional = carRepository.findById(id);
+        if (carOptional.isPresent()) {
+            return carRepository.findById(id);
+        }
         throw new IllegalArgumentException();
     }
-    return carRepository.findAll();
-}
-
-@Override
-public Optional<Car> findById(Long id) {
-    Optional<Car> carOptional = carRepository.findById(id);
-    if (carOptional.isPresent()) {
-        return carRepository.findById(id);
-    }
-    throw new IllegalArgumentException();
-}
 }

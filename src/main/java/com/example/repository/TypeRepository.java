@@ -15,6 +15,7 @@ import java.util.List;
 public interface TypeRepository extends JpaRepository<Type,Long> {
     @Query(value = "select type.name as name , count(car.type_id) as quantity from type left join car on type.id = car.type_id group by type.id",nativeQuery = true)
     List<TypeDTO> findQuantityInTypeByIdType();
+    boolean existsTypeByName(String name);
     @Modifying
     @Query(value = "CALL delete_type(:id);",nativeQuery = true)
     void deleteTypeById(@Param("id") Long id);

@@ -1,5 +1,6 @@
 package com.example.service.impl;
 
+import com.example.controller.ExceptionController;
 import com.example.model.Producer;
 import com.example.model.dto.ProducerDTO;
 import com.example.repository.ProducerRepository;
@@ -9,8 +10,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 
+import javax.validation.ValidationException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -23,29 +26,46 @@ public class ProducerServiceImpl implements ProducerService {
     }
 
     @Override
-    public Producer update(Long id, Producer producer,BindingResult bindingResult) {
+    public Producer update(Long id, Producer producer, BindingResult bindingResult) {
         Optional<Producer> producerOptional = producerRepository.findById(id);
-        if (producerOptional.isPresent()) {
-            producer.setId(id);
-            return producerRepository.save(producer);
+        if (bindingResult.hasErrors()) {
+            List<String> errors = ExceptionController.getMessageError(bindingResult);
+            throw new ValidationException(errors.stream().collect(Collectors.joining("; ")));
         }
-        throw new IllegalArgumentException();
+        List<String> errors = ExceptionController.getMessageError(bindingResult);
+        if (producerRepository.existsProducerByName(producer.getName()) && !producerOptional.get().getName().equals(producer.getName())) {
+            errors.add("name: Tên đã tồn tại");
+        }
+        if (errors.size() > 0) {
+            throw new ValidationException(errors.stream().collect(Collectors.joining("; ")));
+        }
+        producer.setId(id);
+        return producerRepository.save(producer);
     }
 
     @Override
-    public Producer save(Producer producer , BindingResult bindingResult) {
+    public Producer save(Producer producer, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            List<String> errors = ExceptionController.getMessageError(bindingResult);
+            throw new ValidationException(errors.stream().collect(Collectors.joining("; ")));
+        }
+        List<String> errors = ExceptionController.getMessageError(bindingResult);
+        if (producerRepository.existsProducerByName(producer.getName())) {
+            errors.add("name: Tên đã tồn tại");
+        }
+        if (errors.size() > 0) {
+            throw new ValidationException(errors.stream().collect(Collectors.joining("; ")));
+        }
         return producerRepository.save(producer);
     }
 
     @Override
     public Producer delete(Long id) {
         Optional<Producer> producerOptional = findById(id);
-        if (producerOptional.isPresent()) {
-            producerRepository.deleteProducerById(id);
-            return producerOptional.get();
-        }
-        throw new IllegalArgumentException();
+        producerRepository.deleteProducerById(id);
+        return producerOptional.get();
     }
+
 
     @Override
     public List<Producer> findAll() {
@@ -57,12 +77,16 @@ public class ProducerServiceImpl implements ProducerService {
 
     @Override
     public Optional<Producer> findById(Long id) {
-        return producerRepository.findById(id);
+        Optional<Producer> producerOptional = producerRepository.findById(id);
+        if (producerOptional.isPresent()) {
+            return producerRepository.findById(id);
+        }
+        throw new IllegalArgumentException();
     }
 
     @Override
     public List<ProducerDTO> findQuantityInProducerByIdProducer() {
-        if (producerRepository.findQuantityInProducerByIdProducer().isEmpty()){
+        if (producerRepository.findQuantityInProducerByIdProducer().isEmpty()) {
             throw new IllegalArgumentException();
         }
         return producerRepository.findQuantityInProducerByIdProducer();

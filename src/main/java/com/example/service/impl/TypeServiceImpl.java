@@ -1,5 +1,7 @@
 package com.example.service.impl;
 
+import com.example.controller.ExceptionController;
+import com.example.model.Producer;
 import com.example.model.Type;
 import com.example.model.dto.TypeDTO;
 import com.example.repository.TypeRepository;
@@ -9,8 +11,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 
+import javax.validation.ValidationException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 @Service
 @Transactional
 public class TypeServiceImpl implements TypeService {
@@ -21,6 +26,17 @@ public class TypeServiceImpl implements TypeService {
     }
     @Override
     public Type save(Type type , BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            List<String> errors = ExceptionController.getMessageError(bindingResult);
+            throw new ValidationException(errors.stream().collect(Collectors.joining("; ")));
+        }
+        List<String> errors = ExceptionController.getMessageError(bindingResult);
+        if (typeRepository.existsTypeByName(type.getName())) {
+            errors.add("name: Tên đã tồn tại");
+        }
+        if (errors.size()>0){
+            throw new ValidationException(errors.stream().collect(Collectors.joining("; ")));
+        }
         return typeRepository.save(type);
     }
 
@@ -37,11 +53,19 @@ public class TypeServiceImpl implements TypeService {
     @Override
     public Type update(Long id, Type type,BindingResult bindingResult) {
         Optional<Type> typeOptional = typeRepository.findById(id);
-        if (typeOptional.isPresent()) {
-            type.setId(id);
-            return typeRepository.save(type);
+        if (bindingResult.hasErrors()) {
+            List<String> errors = ExceptionController.getMessageError(bindingResult);
+            throw new ValidationException(errors.stream().collect(Collectors.joining("; ")));
         }
-        throw new IllegalArgumentException();
+        List<String> errors = ExceptionController.getMessageError(bindingResult);
+        if (typeRepository.existsTypeByName(type.getName()) && !typeOptional.get().getName().equals(type.getName())) {
+            errors.add("name: Tên đã tồn tại");
+        }
+        if (errors.size()>0){
+            throw new ValidationException(errors.stream().collect(Collectors.joining("; ")));
+        }
+        type.setId(id);
+        return typeRepository.save(type);
     }
 
     @Override
@@ -54,7 +78,11 @@ public class TypeServiceImpl implements TypeService {
 
     @Override
     public Optional<Type> findById(Long id) {
-        return typeRepository.findById(id);
+        Optional<Type> typeOptional = typeRepository.findById(id);
+        if (typeOptional.isPresent()) {
+            return typeOptional;
+        }
+        throw new IllegalArgumentException();
     }
 
     @Override

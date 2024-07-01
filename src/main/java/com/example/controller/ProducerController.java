@@ -26,48 +26,31 @@ public class ProducerController {
 
     @GetMapping
     public ResponseEntity<List<Producer>> getAll() {
-        List<Producer> producers =  producerService.findAll();
-        if (producers.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        }
-        return new ResponseEntity<>(producers, HttpStatus.OK);
+        return new ResponseEntity<>(producerService.findAll(), HttpStatus.OK);
     }
 
     @PostMapping
     public ResponseEntity<Producer> create(@Validated @RequestBody Producer producer, BindingResult bindingResult) {
-        return new ResponseEntity<>(producerService.save(producer , bindingResult), HttpStatus.CREATED);
+        return new ResponseEntity<>(producerService.save(producer, bindingResult), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Producer> update(@Validated @PathVariable Long id, @RequestBody Producer producer, BindingResult bindingResult) {
-        Producer existingProducer = producerService.findById(id).orElse(null);
-        if (existingProducer == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-        producer.setId(id);
-        return new ResponseEntity<>(producerService.update(id,producer,bindingResult), HttpStatus.OK);
+        return new ResponseEntity<>(producerService.update(id, producer, bindingResult), HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Producer> delete(@PathVariable Long id) {
-        Optional<Producer> producer = producerService.findById(id);
-        if (producer.isPresent()) {
-            return new ResponseEntity<>(producerService.delete(id), HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(producerService.delete(id), HttpStatus.OK);
     }
 
     @GetMapping("/statistic")
     public ResponseEntity<List<ProducerDTO>> getStatistic() {
-        List<ProducerDTO> producerDTOList = producerService.findQuantityInProducerByIdProducer();
-        if (producerDTOList.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        }
-        return new ResponseEntity<>(producerDTOList, HttpStatus.OK);
+        return new ResponseEntity<>(producerService.findQuantityInProducerByIdProducer(), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Producer> findById(@PathVariable Long id) {
-        return new ResponseEntity<>(producerService.findById(id).get(),HttpStatus.OK);
+        return new ResponseEntity<>(producerService.findById(id).get(), HttpStatus.OK);
     }
 }
